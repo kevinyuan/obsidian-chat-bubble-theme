@@ -1,6 +1,6 @@
 {
-  "id": "ms-copilot-theme-plugin",
-  "name": "MS Copilot Theme Plugin",
+  "id": "ms-copilot-theme",
+  "name": "MS Copilot Theme",
   "version": "1.0.0",
   "minAppVersion": "0.15.6",
   "description": "Helix Warm theme with chat callout outline injection. Bundled as a plugin because outline injection requires JavaScript, which pure CSS themes cannot provide.",
