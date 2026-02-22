@@ -424,7 +424,8 @@ pre[class~="language-powershell"] { --cb-lang: "PowerShell"; }
 			const calloutHeadings = this._parseCallouts(content);
 			this._calloutCache.set(file.path, calloutHeadings);
 			this._updating = true;
-			this.app.metadataCache.trigger("changed", file);
+			const cache = this.app.metadataCache.getFileCache(file);
+			this.app.metadataCache.trigger("changed", file, content, cache);
 			this._updating = false;
 		} catch {
 			this._updating = false;
