@@ -1,12 +1,151 @@
 import { Plugin, PluginSettingTab, Setting, App, TFile, HeadingCache } from "obsidian";
 
+// ── Theme Presets ────────────────────────────────────────────
+
+type ThemePresetKey = "warm" | "ocean" | "forest" | "lavender";
+
+interface ThemePreset {
+	label: string;
+	circleEmoji: string;
+	palette: string[];
+	defaults: {
+		markdownBgColor: string;
+		chatRBubbleColor: string;
+		chatLBubbleColor: string;
+		tableHeaderBorderColor: string;
+	};
+	css: {
+		textColor: string;
+		headingColor: string;
+		borderColor: string;
+		qBorderColor: string;
+		linkColor: string;
+		inlineCodeBg: string;
+		inlineCodeColor: string;
+		emphasisColor: string;
+		codeBlockLightBg: string;
+	};
+}
+
+const THEME_PRESETS: Record<ThemePresetKey, ThemePreset> = {
+	lavender: {
+		label: "Lavender",
+		circleEmoji: "🟣",
+		palette: [
+			"#FFFFFF", "#F5F0FA", "#E4D6F2", "#EDE4F5", "#D8C4ED",
+			"#C4AAE0", "#B090D4", "#D0BAE8", "#FAF5FD",
+			"#E0D0F0", "#A080C8", "#7E58B0", "#6A3D9A", "#000000",
+		],
+		defaults: {
+			markdownBgColor: "#FFFFFF",
+			chatRBubbleColor: "#E4D6F2",
+			chatLBubbleColor: "#E4D6F2",
+			tableHeaderBorderColor: "#B090D4",
+		},
+		css: {
+			textColor: "rgb(38, 30, 48)",
+			headingColor: "rgb(50, 38, 62)",
+			borderColor: "rgb(196, 170, 224)",
+			qBorderColor: "rgb(208, 186, 232)",
+			linkColor: "#6A3D9A",
+			inlineCodeBg: "#EDE4F5",
+			inlineCodeColor: "#5A2D8A",
+			emphasisColor: "#5E3D7A",
+			codeBlockLightBg: "#F0EAF6",
+		},
+	},
+	warm: {
+		label: "Warm",
+		circleEmoji: "🟤",
+		palette: [
+			"#FFFFFF", "#F8F4F2", "#F9E3D0", "#F0E8DC", "#FAEFE4",
+			"#E8D5C4", "#D9C7B8", "#F5E6D3", "#FFF8F0",
+			"#F2E2D0", "#E6CDB5", "#C4A882", "#A0522D", "#000000",
+		],
+		defaults: {
+			markdownBgColor: "#FFFFFF",
+			chatRBubbleColor: "#F9E3D0",
+			chatLBubbleColor: "#F9E3D0",
+			tableHeaderBorderColor: "#D9C7B8",
+		},
+		css: {
+			textColor: "rgb(38, 35, 32)",
+			headingColor: "rgb(49, 45, 42)",
+			borderColor: "rgb(217, 199, 184)",
+			qBorderColor: "rgb(207, 201, 198)",
+			linkColor: "#A0522D",
+			inlineCodeBg: "#F0E8DC",
+			inlineCodeColor: "#8B4513",
+			emphasisColor: "#5C4A38",
+			codeBlockLightBg: "#F5F0EB",
+		},
+	},
+	ocean: {
+		label: "Ocean",
+		circleEmoji: "🔵",
+		palette: [
+			"#FFFFFF", "#F0F6FA", "#D4EAF5", "#E0EFF8", "#C5DFF0",
+			"#A8CFEA", "#8BBDD9", "#B0D4EB", "#F5FAFD",
+			"#D0E6F3", "#7BAECC", "#4D8FAB", "#2B6E8A", "#000000",
+		],
+		defaults: {
+			markdownBgColor: "#FFFFFF",
+			chatRBubbleColor: "#D4EAF5",
+			chatLBubbleColor: "#D4EAF5",
+			tableHeaderBorderColor: "#8BBDD9",
+		},
+		css: {
+			textColor: "rgb(28, 38, 45)",
+			headingColor: "rgb(32, 48, 58)",
+			borderColor: "rgb(168, 199, 220)",
+			qBorderColor: "rgb(180, 208, 228)",
+			linkColor: "#2B6E8A",
+			inlineCodeBg: "#E0EFF8",
+			inlineCodeColor: "#1A5F7A",
+			emphasisColor: "#3A6A80",
+			codeBlockLightBg: "#EAF3F9",
+		},
+	},
+	forest: {
+		label: "Forest",
+		circleEmoji: "🟢",
+		palette: [
+			"#FFFFFF", "#F2F6F0", "#D8E8D0", "#E4EFE0", "#C8DEC0",
+			"#AECCA0", "#96BC88", "#B8D8A8", "#F5F9F3",
+			"#D0E4C8", "#80B470", "#5A9A48", "#3D6B2E", "#000000",
+		],
+		defaults: {
+			markdownBgColor: "#FFFFFF",
+			chatRBubbleColor: "#D8E8D0",
+			chatLBubbleColor: "#D8E8D0",
+			tableHeaderBorderColor: "#96BC88",
+		},
+		css: {
+			textColor: "rgb(32, 40, 28)",
+			headingColor: "rgb(38, 52, 32)",
+			borderColor: "rgb(174, 204, 160)",
+			qBorderColor: "rgb(186, 212, 176)",
+			linkColor: "#3D6B2E",
+			inlineCodeBg: "#E4EFE0",
+			inlineCodeColor: "#2D5A1E",
+			emphasisColor: "#4A6E3C",
+			codeBlockLightBg: "#EBF2E8",
+		},
+	},
+};
+
 interface PluginSettings {
 	// Theme
+	themePreset: ThemePresetKey;
 	enableThemeCSS: boolean;
 	markdownBgColor: string;
 	codeBlockRadius: number;
 	checkboxStrikethrough: boolean;
+	tableRadius: number;
+	tableHeaderBorderColor: string;
+	codeBlockDarkTheme: boolean;
 	// Chat Bubbles
+	calloutIndicator: string;
 	chatRBubbleColor: string;
 	chatLBubbleColor: string;
 	chatBubbleMaxWidth: number;
@@ -21,12 +160,17 @@ interface PluginSettings {
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
+	themePreset: "lavender",
 	enableThemeCSS: true,
-	markdownBgColor: "#F8F4F2",
+	markdownBgColor: "#FFFFFF",
 	codeBlockRadius: 14,
 	checkboxStrikethrough: false,
-	chatRBubbleColor: "#F9E3D0",
-	chatLBubbleColor: "#F9E3D0",
+	tableRadius: 8,
+	tableHeaderBorderColor: "#B090D4",
+	codeBlockDarkTheme: true,
+	calloutIndicator: "none",
+	chatRBubbleColor: "#E4D6F2",
+	chatLBubbleColor: "#E4D6F2",
 	chatBubbleMaxWidth: 75,
 	enableOutlineInjection: true,
 	injectChatR: true,
@@ -42,16 +186,12 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 	private _calloutCache: Map<string, HeadingCache[]> = new Map();
 	private _updating = false;
 	private _originalGetFileCache: ((file: TFile) => ReturnType<typeof this.app.metadataCache.getFileCache>) | null = null;
-	private _styleEl: HTMLStyleElement | null = null;
 
 	async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new ChatCalloutOutlineSettingTab(this.app, this));
 
-		// Inject dynamic CSS
-		this._styleEl = document.createElement("style");
-		this._styleEl.id = "chat-bubble-theme-dynamic";
-		document.head.appendChild(this._styleEl);
+		// Apply CSS variables and body class
 		this._applyCSS();
 
 		// Monkey-patch metadataCache.getFileCache
@@ -65,19 +205,19 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 		this.registerEvent(
 			this.app.metadataCache.on("changed", (file: TFile) => {
 				if (this._updating) return;
-				this._updateCallouts(file);
+				void this._updateCallouts(file);
 			})
 		);
 
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", () => {
 				const file = this.app.workspace.getActiveFile();
-				if (file) this._updateCallouts(file);
+				if (file) void this._updateCallouts(file);
 			})
 		);
 
 		const activeFile = this.app.workspace.getActiveFile();
-		if (activeFile) this._updateCallouts(activeFile);
+		if (activeFile) void this._updateCallouts(activeFile);
 	}
 
 	onunload() {
@@ -85,7 +225,10 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 			this.app.metadataCache.getFileCache = this._originalGetFileCache;
 		}
 		this._calloutCache.clear();
-		if (this._styleEl) this._styleEl.remove();
+		// Remove body classes and CSS variables
+		document.body.classList.remove("chat-bubble-theme-active", "cbt-no-strikethrough", "cbt-code-light", "cbt-indicator-dot", "cbt-indicator-speech");
+		document.body.style.removeProperty("--cbt-indicator-emoji");
+		this._removeCSSVariables();
 	}
 
 	async loadSettings() {
@@ -96,308 +239,78 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	// ── Dynamic CSS ──────────────────────────────────────────────
+	// ── Dynamic CSS via variables ────────────────────────────────
 
 	_applyCSS() {
-		if (!this._styleEl) return;
-		this._styleEl.textContent = this.settings.enableThemeCSS
-			? this._generateCSS()
-			: "";
-	}
-
-	private _generateCSS(): string {
-		const s = this.settings;
-		const bg = s.markdownBgColor;
-		const radius = s.codeBlockRadius + "px";
-		const chatRBg = s.chatRBubbleColor;
-		const chatLBg = s.chatLBubbleColor;
-		const chatMaxW = s.chatBubbleMaxWidth + "%";
-
-		const textColor = "rgb(38, 35, 32)";
-		const headingColor = "rgb(49, 45, 42)";
-		const borderColor = "rgb(217, 199, 184)";
-		const qBorderColor = "rgb(207, 201, 198)";
-		const headerBg = "rgb(250, 239, 228)";
-
-		let css = `
-/* ===== Markdown Area Background ===== */
-.markdown-preview-view,
-.markdown-reading-view .markdown-preview-view {
-  background-color: ${bg};
-}
-.markdown-source-view.mod-cm6 .cm-scroller {
-  background-color: ${bg};
-}
-
-/* ===== Typography ===== */
-.markdown-preview-view,
-.markdown-source-view.mod-cm6 .cm-scroller {
-  color: ${textColor};
-  line-height: 1.8;
-}
-.markdown-preview-view {
-  padding: 2em 3em;
-}
-.markdown-preview-view p {
-  margin-bottom: 0.8em;
-}
-
-/* ===== Headings ===== */
-.markdown-preview-view h1,
-.markdown-preview-view h2,
-.markdown-preview-view h3,
-.markdown-preview-view h4,
-.markdown-preview-view h5,
-.markdown-preview-view h6,
-.markdown-rendered h1,
-.markdown-rendered h2,
-.markdown-rendered h3,
-.markdown-rendered h4,
-.markdown-rendered h5,
-.markdown-rendered h6 {
-  color: ${headingColor};
-  font-weight: 700;
-  line-height: 1.3;
-  margin-top: 1.5em;
-  margin-bottom: 0.6em;
-  border-bottom: none;
-  padding-bottom: 0;
-}
-.markdown-preview-view h1, .markdown-rendered h1 { font-size: 1.8em; }
-.markdown-preview-view h2, .markdown-rendered h2 { font-size: 1.4em; padding-bottom: 0.3em; }
-.markdown-preview-view h3, .markdown-rendered h3 { font-size: 1.2em; }
-.markdown-preview-view h4, .markdown-rendered h4 { font-size: 1.0em; }
-
-/* ===== Horizontal Rule ===== */
-.markdown-preview-view hr,
-.markdown-rendered hr,
-body .markdown-preview-view hr,
-body .markdown-rendered hr {
-  border: none;
-  border-top: 1px solid ${borderColor};
-  margin: 2em 0;
-  background-color: ${borderColor};
-  background: ${borderColor};
-  height: 1px;
-  color: ${borderColor};
-}
-.theme-light, .theme-dark { --hr-color: ${borderColor}; }
-
-/* ===== Blockquote ===== */
-.theme-light, .theme-dark {
-  --blockquote-border-color: ${qBorderColor};
-  --blockquote-border-thickness: 3px;
-  --blockquote-background-color: transparent;
-}
-.markdown-preview-view blockquote,
-.markdown-rendered blockquote,
-body .markdown-preview-view blockquote,
-body .markdown-rendered blockquote {
-  border-left: 3px solid ${qBorderColor};
-  border-right: none; border-top: none; border-bottom: none;
-  background-color: transparent;
-  padding: 0.4em 1.2em;
-  margin: 1em 0;
-  color: ${textColor};
-  font-weight: 600;
-  font-style: normal;
-}
-.markdown-preview-view blockquote p,
-.markdown-rendered blockquote p { margin: 0.3em 0; }
-
-/* ===== Table ===== */
-.markdown-preview-view table, .markdown-rendered table {
-  width: 100%; border-collapse: separate; border-spacing: 0;
-  margin: 1.5em 0; font-size: 0.95em;
-  border: 1px solid ${borderColor}; border-radius: 8px;
-  overflow: hidden; background-color: ${bg};
-}
-.markdown-preview-view table thead tr th:first-child,
-.markdown-rendered table thead tr th:first-child { border-top-left-radius: 8px; }
-.markdown-preview-view table thead tr th:last-child,
-.markdown-rendered table thead tr th:last-child { border-top-right-radius: 8px; }
-.markdown-preview-view table tbody tr:last-child td:first-child,
-.markdown-rendered table tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
-.markdown-preview-view table tbody tr:last-child td:last-child,
-.markdown-rendered table tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
-.markdown-preview-view table thead tr, .markdown-rendered table thead tr { background-color: ${headerBg}; }
-.markdown-preview-view table th, .markdown-rendered table th {
-  font-weight: 700; color: ${headingColor}; text-align: left;
-  padding: 0.8em 1.2em;
-  border-bottom: 1px solid ${borderColor}; border-right: 1px solid ${borderColor};
-  border-top: none; border-left: none;
-  background-color: ${headerBg}; font-size: 1em;
-}
-.markdown-preview-view table th:last-child, .markdown-rendered table th:last-child { border-right: none; }
-.markdown-preview-view table td, .markdown-rendered table td {
-  padding: 0.75em 1.2em;
-  border-bottom: 1px solid ${borderColor}; border-right: 1px solid ${borderColor};
-  border-top: none; border-left: none;
-  color: ${textColor}; font-weight: 400; background-color: ${bg};
-}
-.markdown-preview-view table td:last-child, .markdown-rendered table td:last-child { border-right: none; }
-.markdown-preview-view table tbody tr:last-child td,
-.markdown-rendered table tbody tr:last-child td { border-bottom: none; }
-.markdown-preview-view table tr:hover th, .markdown-rendered table tr:hover th,
-.markdown-preview-view table thead tr:hover th, .markdown-rendered table thead tr:hover th { background-color: ${headerBg}; }
-.markdown-preview-view table tr:hover td, .markdown-rendered table tr:hover td,
-.markdown-preview-view table tbody tr:hover td, .markdown-rendered table tbody tr:hover td,
-.markdown-preview-view table tr:hover, .markdown-rendered table tr:hover { background-color: ${bg}; }
-
-/* ===== Links ===== */
-.markdown-preview-view a, .markdown-rendered a {
-  color: #A0522D; text-decoration: none;
-  border-bottom: 1px solid transparent; transition: border-bottom 0.2s ease;
-}
-.markdown-preview-view a:hover, .markdown-rendered a:hover { border-bottom: 1px solid #A0522D; }
-
-/* ===== Inline Code ===== */
-.markdown-preview-view code:not(pre code), .markdown-rendered code:not(pre code) {
-  background-color: #F0E8DC; color: #8B4513;
-  padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em;
-}
-
-/* ===== Code Block ===== */
-.markdown-preview-view pre, .markdown-rendered pre {
-  background-color: rgb(29, 26, 23); border: none;
-  border-radius: ${radius}; padding: 0; position: relative;
-}
-.markdown-preview-view pre::before, .markdown-rendered pre::before {
-  content: ""; position: absolute; top: 2.8em; left: 1.2em; right: 1.2em;
-  height: 1px; background-color: rgb(74, 72, 69); z-index: 1;
-}
-.markdown-preview-view pre code, .markdown-rendered pre code {
-  color: #D4D4D4; background-color: transparent; display: block;
-  padding: 4.0em 1.4em 1.2em 1.4em;
-}
-.markdown-preview-view pre[class*="language-"]::after,
-.markdown-rendered pre[class*="language-"]::after {
-  content: var(--cb-lang, "") !important;
-  position: absolute !important; top: calc(0.4em + 2px) !important;
-  left: 0.8em !important; right: auto !important; width: auto !important;
-  color: #FFFFFF !important; font-family: var(--font-default) !important;
-  font-size: 0.85em !important; font-weight: 500 !important;
-  line-height: 2em !important; height: 2em !important;
-  background: transparent !important; border: none !important;
-  border-radius: 999px !important; padding: 0 0.6em !important;
-  margin: 0 !important; box-sizing: border-box !important;
-  opacity: 1 !important; z-index: 2 !important;
-  display: flex !important; align-items: center !important;
-  overflow: hidden !important; pointer-events: none !important;
-}
-pre[class~="language-c"] { --cb-lang: "C"; }
-pre[class~="language-r"] { --cb-lang: "R"; }
-pre[class~="language-go"] { --cb-lang: "Go"; }
-pre[class~="language-cs"], pre[class~="language-csharp"] { --cb-lang: "C#"; }
-pre[class~="language-cpp"] { --cb-lang: "C++"; }
-pre[class~="language-css"] { --cb-lang: "CSS"; }
-pre[class~="language-php"] { --cb-lang: "PHP"; }
-pre[class~="language-sql"] { --cb-lang: "SQL"; }
-pre[class~="language-lua"] { --cb-lang: "Lua"; }
-pre[class~="language-ini"] { --cb-lang: "INI"; }
-pre[class~="language-xml"] { --cb-lang: "XML"; }
-pre[class~="language-java"] { --cb-lang: "Java"; }
-pre[class~="language-ruby"], pre[class~="language-rb"] { --cb-lang: "Ruby"; }
-pre[class~="language-rust"], pre[class~="language-rs"] { --cb-lang: "Rust"; }
-pre[class~="language-dart"] { --cb-lang: "Dart"; }
-pre[class~="language-perl"] { --cb-lang: "Perl"; }
-pre[class~="language-scss"] { --cb-lang: "SCSS"; }
-pre[class~="language-json"] { --cb-lang: "JSON"; }
-pre[class~="language-html"] { --cb-lang: "HTML"; }
-pre[class~="language-yaml"], pre[class~="language-yml"] { --cb-lang: "YAML"; }
-pre[class~="language-toml"] { --cb-lang: "TOML"; }
-pre[class~="language-shell"], pre[class~="language-bash"], pre[class~="language-sh"] { --cb-lang: "Shell"; }
-pre[class~="language-swift"] { --cb-lang: "Swift"; }
-pre[class~="language-scala"] { --cb-lang: "Scala"; }
-pre[class~="language-regex"] { --cb-lang: "Regex"; }
-pre[class~="language-latex"], pre[class~="language-tex"] { --cb-lang: "LaTeX"; }
-pre[class~="language-python"], pre[class~="language-py"] { --cb-lang: "Python"; }
-pre[class~="language-kotlin"], pre[class~="language-kt"] { --cb-lang: "Kotlin"; }
-pre[class~="language-docker"], pre[class~="language-dockerfile"] { --cb-lang: "Docker"; }
-pre[class~="language-graphql"] { --cb-lang: "GraphQL"; }
-pre[class~="language-markdown"], pre[class~="language-md"] { --cb-lang: "Markdown"; }
-pre[class~="language-javascript"], pre[class~="language-js"] { --cb-lang: "JavaScript"; }
-pre[class~="language-typescript"], pre[class~="language-ts"] { --cb-lang: "TypeScript"; }
-pre[class~="language-powershell"] { --cb-lang: "PowerShell"; }
-
-/* ---- Copy button ---- */
-.markdown-preview-view pre .copy-code-button, .markdown-rendered pre .copy-code-button {
-  position: absolute !important; top: 0.4em !important; right: 0.8em !important;
-  left: auto !important; width: auto !important; color: transparent !important;
-  font-size: 0.85em !important; line-height: 2em !important; height: 2em !important;
-  background: transparent !important; border: none !important;
-  border-radius: 999px !important; padding: 0 0.6em !important;
-  opacity: 1 !important; visibility: visible !important; cursor: pointer !important;
-  z-index: 4 !important; display: flex !important; align-items: center !important;
-  gap: 0.3em !important; overflow: hidden !important;
-  transition: background-color 0.15s ease !important;
-}
-.markdown-preview-view pre .copy-code-button:hover,
-.markdown-rendered pre .copy-code-button:hover { background-color: rgba(255,255,255,0.1) !important; }
-.markdown-preview-view pre .copy-code-button svg, .markdown-rendered pre .copy-code-button svg {
-  width: 1em !important; height: 1em !important; color: #FFFFFF !important;
-  stroke: #FFFFFF !important; flex-shrink: 0 !important;
-}
-.markdown-preview-view pre .copy-code-button::after, .markdown-rendered pre .copy-code-button::after {
-  content: "Copy" !important; font-family: var(--font-default) !important;
-  font-size: 0.85rem !important; font-weight: 500 !important; color: #FFFFFF !important;
-}
-
-/* ===== Bold & Italic ===== */
-.markdown-preview-view strong, .markdown-rendered strong { color: ${headingColor}; font-weight: 700; }
-.markdown-preview-view em, .markdown-rendered em { color: #5C4A38; }
-
-/* ===== Lists ===== */
-.markdown-preview-view ul, .markdown-preview-view ol,
-.markdown-rendered ul, .markdown-rendered ol { padding-left: 1.5em; margin-bottom: 0.8em; }
-.markdown-preview-view li, .markdown-rendered li { margin-bottom: 0.3em; }
-.markdown-preview-view ul > li::marker, .markdown-rendered ul > li::marker { color: ${headingColor}; }
-.list-bullet::after { background-color: ${headingColor}; }
-
-/* ===== Chat Bubble Callouts ===== */
-.callout[data-callout="chat-r"], .callout[data-callout="chat-r"]:hover,
-.callout[data-callout="chat-l"], .callout[data-callout="chat-l"]:hover {
-  display: flex; background: none; background-color: transparent;
-  border: none; box-shadow: none; padding: 0; margin: 0.05em 0;
-  mix-blend-mode: normal; outline: none; cursor: default;
-}
-.callout[data-callout="chat-r"] .callout-title,
-.callout[data-callout="chat-l"] .callout-title { display: none; }
-.callout[data-callout="chat-r"] .callout-content,
-.callout[data-callout="chat-l"] .callout-content {
-  color: ${textColor}; border-radius: 22px; padding: 0.9em 1.6em;
-  max-width: ${chatMaxW}; display: inline-block;
-  font-weight: 400; font-size: 1em; line-height: 1.6; width: fit-content;
-}
-.callout[data-callout="chat-r"] .callout-content p,
-.callout[data-callout="chat-l"] .callout-content p { margin: 0; }
-.callout[data-callout="chat-r"], .callout[data-callout="chat-r"]:hover { justify-content: flex-end; }
-.callout[data-callout="chat-r"] .callout-content { background-color: ${chatRBg}; margin-left: auto; }
-.callout[data-callout="chat-l"], .callout[data-callout="chat-l"]:hover { justify-content: flex-start; }
-.callout[data-callout="chat-l"] .callout-content { background-color: ${chatLBg}; margin-right: auto; }
-`;
-
-		if (!s.checkboxStrikethrough) {
-			css += `
-/* ===== Checkbox — No Strikethrough ===== */
-.HyperMD-task-line[data-task="x"],
-.HyperMD-task-line[data-task="X"],
-.HyperMD-task-line[data-task="x"] span,
-.HyperMD-task-line[data-task="X"] span,
-.HyperMD-task-line[data-task="x"] .cm-list-1,
-.HyperMD-task-line[data-task="X"] .cm-list-1 { text-decoration: none !important; }
-.markdown-rendered .task-list-item.is-checked,
-.markdown-rendered .task-list-item.is-checked p,
-.markdown-rendered .task-list-item.is-checked a,
-.markdown-rendered .task-list-item.is-checked span,
-.markdown-rendered .task-list-item[data-task="x"],
-.markdown-rendered .task-list-item[data-task="x"] p,
-.markdown-rendered .task-list-item[data-task="X"],
-.markdown-rendered .task-list-item[data-task="X"] p { text-decoration: none !important; }
-`;
+		if (this.settings.enableThemeCSS) {
+			document.body.classList.add("chat-bubble-theme-active");
+			this._setCSSVariables();
+		} else {
+			document.body.classList.remove("chat-bubble-theme-active");
+			this._removeCSSVariables();
 		}
 
-		return css;
+		if (!this.settings.checkboxStrikethrough) {
+			document.body.classList.add("cbt-no-strikethrough");
+		} else {
+			document.body.classList.remove("cbt-no-strikethrough");
+		}
+
+		if (!this.settings.codeBlockDarkTheme) {
+			document.body.classList.add("cbt-code-light");
+		} else {
+			document.body.classList.remove("cbt-code-light");
+		}
+
+		document.body.classList.remove("cbt-indicator-dot", "cbt-indicator-speech");
+		const ind = this.settings.calloutIndicator;
+		if (ind === "speech") {
+			document.body.classList.add("cbt-indicator-speech");
+		} else if (ind && ind !== "none") {
+			document.body.classList.add("cbt-indicator-dot");
+			document.body.style.setProperty("--cbt-indicator-emoji", `"${ind}"`);
+		}
+	}
+
+	private _setCSSVariables() {
+		const s = this.settings;
+		const theme = THEME_PRESETS[s.themePreset];
+		document.body.style.setProperty("--cbt-bg", s.markdownBgColor);
+		document.body.style.setProperty("--cbt-radius", s.codeBlockRadius + "px");
+		document.body.style.setProperty("--cbt-chat-r-bg", s.chatRBubbleColor);
+		document.body.style.setProperty("--cbt-chat-l-bg", s.chatLBubbleColor);
+		document.body.style.setProperty("--cbt-chat-max-w", s.chatBubbleMaxWidth + "%");
+		document.body.style.setProperty("--cbt-table-radius", s.tableRadius + "px");
+		document.body.style.setProperty("--cbt-table-border-color", s.tableHeaderBorderColor);
+		// Derive header bg by mixing border color with white (30% color, 70% white)
+		const hex = s.tableHeaderBorderColor.replace("#", "");
+		const r = Math.round(parseInt(hex.substring(0, 2), 16) * 0.3 + 255 * 0.7);
+		const g = Math.round(parseInt(hex.substring(2, 4), 16) * 0.3 + 255 * 0.7);
+		const b = Math.round(parseInt(hex.substring(4, 6), 16) * 0.3 + 255 * 0.7);
+		document.body.style.setProperty("--cbt-table-header-bg", `rgb(${r}, ${g}, ${b})`);
+		// Theme-driven CSS vars
+		document.body.style.setProperty("--cbt-text-color", theme.css.textColor);
+		document.body.style.setProperty("--cbt-heading-color", theme.css.headingColor);
+		document.body.style.setProperty("--cbt-border-color", theme.css.borderColor);
+		document.body.style.setProperty("--cbt-q-border-color", theme.css.qBorderColor);
+		document.body.style.setProperty("--cbt-link-color", theme.css.linkColor);
+		document.body.style.setProperty("--cbt-inline-code-bg", theme.css.inlineCodeBg);
+		document.body.style.setProperty("--cbt-inline-code-color", theme.css.inlineCodeColor);
+		document.body.style.setProperty("--cbt-emphasis-color", theme.css.emphasisColor);
+		document.body.style.setProperty("--cbt-code-light-bg", theme.css.codeBlockLightBg);
+		document.body.style.setProperty("--cbt-circle-emoji", `"${theme.circleEmoji}"`);
+	}
+
+	private _removeCSSVariables() {
+		const vars = [
+			"--cbt-bg", "--cbt-radius", "--cbt-chat-r-bg", "--cbt-chat-l-bg",
+			"--cbt-chat-max-w", "--cbt-table-radius", "--cbt-table-border-color",
+			"--cbt-table-header-bg", "--cbt-text-color", "--cbt-heading-color",
+			"--cbt-border-color", "--cbt-q-border-color", "--cbt-link-color",
+			"--cbt-inline-code-bg", "--cbt-inline-code-color", "--cbt-emphasis-color",
+			"--cbt-code-light-bg", "--cbt-circle-emoji", "--cbt-indicator-emoji",
+		];
+		for (const v of vars) document.body.style.removeProperty(v);
 	}
 
 	// ── Outline injection ────────────────────────────────────────
@@ -500,23 +413,6 @@ pre[class~="language-powershell"] { --cb-lang: "PowerShell"; }
 	}
 }
 
-// ── Preset Palette ───────────────────────────────────────────
-
-const PRESET_PALETTE = [
-	"#F8F4F2", // cream
-	"#F9E3D0", // peach
-	"#F0E8DC", // warm linen
-	"#FAEFE4", // light apricot
-	"#E8D5C4", // tan
-	"#D9C7B8", // warm sand
-	"#F5E6D3", // bisque
-	"#FFF8F0", // soft white
-	"#F2E2D0", // champagne
-	"#E6CDB5", // camel
-	"#C4A882", // warm khaki
-	"#A0522D", // saddle brown
-];
-
 // ── Settings Tab ─────────────────────────────────────────────
 
 class ChatCalloutOutlineSettingTab extends PluginSettingTab {
@@ -555,7 +451,8 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 		swatchContainer.style.marginRight = "8px";
 
 		const current = getValue().toUpperCase();
-		for (const color of PRESET_PALETTE) {
+		const palette = THEME_PRESETS[this.plugin.settings.themePreset].palette;
+		for (const color of palette) {
 			const swatch = swatchContainer.createEl("button", { cls: "palette-swatch" });
 			swatch.dataset.color = color.toUpperCase();
 			Object.assign(swatch.style, {
@@ -580,13 +477,98 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 		setting.controlEl.insertBefore(swatchContainer, setting.controlEl.firstChild);
 	}
 
+	private _addThemePresetPicker(containerEl: HTMLElement): void {
+		const setting = new Setting(containerEl)
+			.setName("Theme preset")
+			.setDesc("Overwrites colors below.");
+
+		const pickerContainer = setting.controlEl.createDiv({ cls: "theme-preset-picker" });
+		Object.assign(pickerContainer.style, {
+			display: "flex", gap: "8px",
+		});
+
+		const currentKey = this.plugin.settings.themePreset;
+		for (const key of Object.keys(THEME_PRESETS) as ThemePresetKey[]) {
+			const theme = THEME_PRESETS[key];
+			const btn = pickerContainer.createDiv({ cls: "theme-preset-btn" });
+			Object.assign(btn.style, {
+				display: "flex", flexDirection: "column", alignItems: "center",
+				gap: "4px", padding: "4px 8px",
+				cursor: "pointer", fontSize: "0.8em",
+			});
+
+			const swatch = btn.createEl("span");
+			Object.assign(swatch.style, {
+				width: "28px", height: "28px", borderRadius: "50%",
+				backgroundColor: theme.defaults.chatRBubbleColor,
+				border: key === currentKey ? "2.5px solid #555" : "1px solid rgba(0,0,0,0.1)",
+				flexShrink: "0",
+			});
+
+			btn.createEl("span", { text: theme.label });
+
+			btn.addEventListener("click", async () => {
+				this.plugin.settings.themePreset = key;
+				const d = theme.defaults;
+				this.plugin.settings.markdownBgColor = d.markdownBgColor;
+				this.plugin.settings.chatRBubbleColor = d.chatRBubbleColor;
+				this.plugin.settings.chatLBubbleColor = d.chatLBubbleColor;
+				this.plugin.settings.tableHeaderBorderColor = d.tableHeaderBorderColor;
+				await this.plugin.saveSettings();
+				this.plugin._applyCSS();
+				this.display();
+			});
+		}
+	}
+
+	private _addIndicatorPicker(containerEl: HTMLElement): void {
+		const setting = new Setting(containerEl)
+			.setName("Callout indicator")
+			.setDesc("Emoji before each bubble.");
+
+		const indicators = [
+			{ key: "none", emoji: "—" },
+			{ key: "speech", emoji: "💬" },
+			{ key: "🔴", emoji: "🔴" },
+			{ key: "🟡", emoji: "🟡" },
+			{ key: "🟠", emoji: "🟠" },
+			{ key: "🟢", emoji: "🟢" },
+			{ key: "🔵", emoji: "🔵" },
+			{ key: "🟣", emoji: "🟣" },
+			{ key: "🟤", emoji: "🟤" },
+			{ key: "⚫", emoji: "⚫" },
+			{ key: "⚪", emoji: "⚪" },
+		];
+
+		const pickerContainer = setting.controlEl.createDiv({ cls: "indicator-picker" });
+		Object.assign(pickerContainer.style, {
+			display: "flex", gap: "4px", flexWrap: "wrap",
+		});
+
+		const current = this.plugin.settings.calloutIndicator;
+		for (const opt of indicators) {
+			const btn = pickerContainer.createDiv({ cls: "indicator-btn" });
+			Object.assign(btn.style, {
+				width: "28px", height: "28px",
+				display: "flex", alignItems: "center", justifyContent: "center",
+				cursor: "pointer", fontSize: "1.1em",
+				borderRadius: "50%",
+				border: opt.key === current ? "2.5px solid #555" : "1px solid rgba(0,0,0,0.1)",
+			});
+			btn.textContent = opt.emoji;
+
+			btn.addEventListener("click", async () => {
+				this.plugin.settings.calloutIndicator = opt.key;
+				await this.plugin.saveSettings();
+				this.plugin._applyCSS();
+				this.display();
+			});
+		}
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-
-		// Palette swatch active style
-		const styleEl = containerEl.createEl("style");
-		styleEl.textContent = `.palette-swatch.is-active { border-color: #555 !important; }`;
 
 		// ── Reset ──
 		new Setting(containerEl)
@@ -602,11 +584,11 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			);
 
 		// ── Theme ──
-		containerEl.createEl("h3", { text: "Theme" });
+		new Setting(containerEl).setName("Theme").setHeading();
 
 		new Setting(containerEl)
 			.setName("Enable theme")
-			.setDesc("Apply the warm theme CSS to markdown views.")
+			.setDesc("Apply theme CSS to markdown views.")
 			.addToggle((t) =>
 				t.setValue(this.plugin.settings.enableThemeCSS).onChange(async (v) => {
 					this.plugin.settings.enableThemeCSS = v;
@@ -615,11 +597,42 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 				})
 			);
 
+		this._addThemePresetPicker(containerEl);
+
 		this._addColorSettingWithPalette(
 			containerEl, "Markdown background color", "",
 			() => this.plugin.settings.markdownBgColor,
 			(v) => { this.plugin.settings.markdownBgColor = v; },
 		);
+
+		new Setting(containerEl)
+			.setName("Table corner radius")
+			.setDesc("Border radius for tables in pixels (0–20).")
+			.addSlider((s) =>
+				s.setLimits(0, 20, 1).setValue(this.plugin.settings.tableRadius)
+					.setDynamicTooltip().onChange(async (v) => {
+						this.plugin.settings.tableRadius = v;
+						await this.plugin.saveSettings();
+						this.plugin._applyCSS();
+					})
+			);
+
+		this._addColorSettingWithPalette(
+			containerEl, "Table header & border color", "",
+			() => this.plugin.settings.tableHeaderBorderColor,
+			(v) => { this.plugin.settings.tableHeaderBorderColor = v; },
+		);
+
+		new Setting(containerEl)
+			.setName("Code block dark theme")
+			.setDesc("Use dark background for code blocks. Disable for a light code block style.")
+			.addToggle((t) =>
+				t.setValue(this.plugin.settings.codeBlockDarkTheme).onChange(async (v) => {
+					this.plugin.settings.codeBlockDarkTheme = v;
+					await this.plugin.saveSettings();
+					this.plugin._applyCSS();
+				})
+			);
 
 		new Setting(containerEl)
 			.setName("Code block corner radius")
@@ -644,8 +657,10 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 				})
 			);
 
-		// ── Chat Bubbles ──
-		containerEl.createEl("h3", { text: "Chat Bubbles" });
+		// ── Chat bubbles ──
+		new Setting(containerEl).setName("Chat bubbles").setHeading();
+
+		this._addIndicatorPicker(containerEl);
 
 		this._addColorSettingWithPalette(
 			containerEl, "User bubble color (chat-r)", "",
@@ -671,8 +686,8 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ── Outline Injection ──
-		containerEl.createEl("h3", { text: "Outline Injection" });
+		// ── Outline injection ──
+		new Setting(containerEl).setName("Outline injection").setHeading();
 
 		new Setting(containerEl)
 			.setName("Enable outline injection")
