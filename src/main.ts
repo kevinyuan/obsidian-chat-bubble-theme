@@ -32,9 +32,9 @@ const THEME_PRESETS: Record<ThemePresetKey, ThemePreset> = {
 		label: "Lavender",
 		circleEmoji: "🟣",
 		palette: [
-			"#FFFFFF", "#F5F0FA", "#E4D6F2", "#EDE4F5", "#D8C4ED",
-			"#C4AAE0", "#B090D4", "#D0BAE8", "#FAF5FD",
-			"#E0D0F0", "#A080C8", "#7E58B0", "#6A3D9A", "#000000",
+			"#FFFFFF", "#F5F0FA", "#EBE0F5", "#E0D0F0",
+			"#D4BEE8", "#C4AAE0", "#B090D4", "#9A74C4",
+			"#8058B0", "#6A3D9A", "#4E2880", "#000000",
 		],
 		defaults: {
 			markdownBgColor: "#FFFFFF",
@@ -58,9 +58,9 @@ const THEME_PRESETS: Record<ThemePresetKey, ThemePreset> = {
 		label: "Warm",
 		circleEmoji: "🟤",
 		palette: [
-			"#FFFFFF", "#F8F4F2", "#F9E3D0", "#F0E8DC", "#FAEFE4",
-			"#E8D5C4", "#D9C7B8", "#F5E6D3", "#FFF8F0",
-			"#F2E2D0", "#E6CDB5", "#C4A882", "#A0522D", "#000000",
+			"#FFFFFF", "#FFF8F0", "#F8F4F2", "#F0E8DC",
+			"#E8D5C4", "#D9C7B8", "#C4A882", "#B08A60",
+			"#9A7048", "#8B4513", "#6B3410", "#000000",
 		],
 		defaults: {
 			markdownBgColor: "#FFFFFF",
@@ -84,9 +84,9 @@ const THEME_PRESETS: Record<ThemePresetKey, ThemePreset> = {
 		label: "Ocean",
 		circleEmoji: "🔵",
 		palette: [
-			"#FFFFFF", "#F0F6FA", "#D4EAF5", "#E0EFF8", "#C5DFF0",
-			"#A8CFEA", "#8BBDD9", "#B0D4EB", "#F5FAFD",
-			"#D0E6F3", "#7BAECC", "#4D8FAB", "#2B6E8A", "#000000",
+			"#FFFFFF", "#F0F6FA", "#E0EFF8", "#D0E6F3",
+			"#B8D6EA", "#8BBDD9", "#6AAAC8", "#4D94B4",
+			"#3A7FA0", "#2B6E8A", "#1A4E66", "#000000",
 		],
 		defaults: {
 			markdownBgColor: "#FFFFFF",
@@ -110,9 +110,9 @@ const THEME_PRESETS: Record<ThemePresetKey, ThemePreset> = {
 		label: "Forest",
 		circleEmoji: "🟢",
 		palette: [
-			"#FFFFFF", "#F2F6F0", "#D8E8D0", "#E4EFE0", "#C8DEC0",
-			"#AECCA0", "#96BC88", "#B8D8A8", "#F5F9F3",
-			"#D0E4C8", "#80B470", "#5A9A48", "#3D6B2E", "#000000",
+			"#FFFFFF", "#F2F6F0", "#E4EFE0", "#D0E4C8",
+			"#B8D4A8", "#96BC88", "#78A868", "#5E9450",
+			"#4A8038", "#3D6B2E", "#2A4E1E", "#000000",
 		],
 		defaults: {
 			markdownBgColor: "#FFFFFF",
