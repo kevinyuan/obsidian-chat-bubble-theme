@@ -500,6 +500,23 @@ pre[class~="language-powershell"] { --cb-lang: "PowerShell"; }
 	}
 }
 
+// ── Preset Palette ───────────────────────────────────────────
+
+const PRESET_PALETTE = [
+	"#F8F4F2", // cream
+	"#F9E3D0", // peach
+	"#F0E8DC", // warm linen
+	"#FAEFE4", // light apricot
+	"#E8D5C4", // tan
+	"#D9C7B8", // warm sand
+	"#F5E6D3", // bisque
+	"#FFF8F0", // soft white
+	"#F2E2D0", // champagne
+	"#E6CDB5", // camel
+	"#C4A882", // warm khaki
+	"#A0522D", // saddle brown
+];
+
 // ── Settings Tab ─────────────────────────────────────────────
 
 class ChatCalloutOutlineSettingTab extends PluginSettingTab {
@@ -510,9 +527,79 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	private _addColorSettingWithPalette(
+		containerEl: HTMLElement,
+		name: string,
+		desc: string,
+		getValue: () => string,
+		setValue: (v: string) => void,
+	): void {
+		const setting = new Setting(containerEl)
+			.setName(name);
+		if (desc) setting.setDesc(desc);
+		setting.addColorPicker((cp) => {
+			cp.setValue(getValue()).onChange(async (v) => {
+				setValue(v);
+				await this.plugin.saveSettings();
+				this.plugin._applyCSS();
+				swatchContainer.querySelectorAll<HTMLElement>(".palette-swatch").forEach((s) => {
+					s.classList.toggle("is-active", s.dataset.color === v.toUpperCase());
+				});
+			});
+		});
+
+		const swatchContainer = setting.controlEl.createDiv({ cls: "palette-swatches" });
+		swatchContainer.style.display = "flex";
+		swatchContainer.style.flexWrap = "wrap";
+		swatchContainer.style.gap = "4px";
+		swatchContainer.style.marginRight = "8px";
+
+		const current = getValue().toUpperCase();
+		for (const color of PRESET_PALETTE) {
+			const swatch = swatchContainer.createEl("button", { cls: "palette-swatch" });
+			swatch.dataset.color = color.toUpperCase();
+			Object.assign(swatch.style, {
+				width: "20px", height: "20px", borderRadius: "50%",
+				backgroundColor: color, border: "2px solid transparent",
+				cursor: "pointer", padding: "0", flexShrink: "0",
+			});
+			if (color.toUpperCase() === current) swatch.classList.add("is-active");
+			swatch.addEventListener("click", async () => {
+				setValue(color);
+				await this.plugin.saveSettings();
+				this.plugin._applyCSS();
+				// Update the color picker visually
+				(setting.components[0] as any)?.setValue?.(color);
+				swatchContainer.querySelectorAll<HTMLElement>(".palette-swatch").forEach((s) => {
+					s.classList.toggle("is-active", s.dataset.color === color.toUpperCase());
+				});
+			});
+		}
+
+		// Insert swatches before the color picker
+		setting.controlEl.insertBefore(swatchContainer, setting.controlEl.firstChild);
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
+
+		// Palette swatch active style
+		const styleEl = containerEl.createEl("style");
+		styleEl.textContent = `.palette-swatch.is-active { border-color: #555 !important; }`;
+
+		// ── Reset ──
+		new Setting(containerEl)
+			.setName("Reset all settings")
+			.setDesc("Restore every option to its default value.")
+			.addButton((b) =>
+				b.setButtonText("Reset to defaults").onClick(async () => {
+					this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
+					await this.plugin.saveSettings();
+					this.plugin._applyCSS();
+					this.display();
+				})
+			);
 
 		// ── Theme ──
 		containerEl.createEl("h3", { text: "Theme" });
@@ -528,15 +615,11 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 				})
 			);
 
-		new Setting(containerEl)
-			.setName("Markdown background color")
-			.addColorPicker((cp) =>
-				cp.setValue(this.plugin.settings.markdownBgColor).onChange(async (v) => {
-					this.plugin.settings.markdownBgColor = v;
-					await this.plugin.saveSettings();
-					this.plugin._applyCSS();
-				})
-			);
+		this._addColorSettingWithPalette(
+			containerEl, "Markdown background color", "",
+			() => this.plugin.settings.markdownBgColor,
+			(v) => { this.plugin.settings.markdownBgColor = v; },
+		);
 
 		new Setting(containerEl)
 			.setName("Code block corner radius")
@@ -564,25 +647,17 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 		// ── Chat Bubbles ──
 		containerEl.createEl("h3", { text: "Chat Bubbles" });
 
-		new Setting(containerEl)
-			.setName("User bubble color (chat-r)")
-			.addColorPicker((cp) =>
-				cp.setValue(this.plugin.settings.chatRBubbleColor).onChange(async (v) => {
-					this.plugin.settings.chatRBubbleColor = v;
-					await this.plugin.saveSettings();
-					this.plugin._applyCSS();
-				})
-			);
+		this._addColorSettingWithPalette(
+			containerEl, "User bubble color (chat-r)", "",
+			() => this.plugin.settings.chatRBubbleColor,
+			(v) => { this.plugin.settings.chatRBubbleColor = v; },
+		);
 
-		new Setting(containerEl)
-			.setName("Response bubble color (chat-l)")
-			.addColorPicker((cp) =>
-				cp.setValue(this.plugin.settings.chatLBubbleColor).onChange(async (v) => {
-					this.plugin.settings.chatLBubbleColor = v;
-					await this.plugin.saveSettings();
-					this.plugin._applyCSS();
-				})
-			);
+		this._addColorSettingWithPalette(
+			containerEl, "Response bubble color (chat-l)", "",
+			() => this.plugin.settings.chatLBubbleColor,
+			(v) => { this.plugin.settings.chatLBubbleColor = v; },
+		);
 
 		new Setting(containerEl)
 			.setName("Bubble max width")
