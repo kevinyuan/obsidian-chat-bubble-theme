@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-chat-bubble-theme",
-	"version": "1.0.0",
-	"description": "Warm theme with chat callout outline injection for Obsidian",
+	"version": "1.1.0",
+	"description": "Theme plugin with 4 color presets, chat bubble callouts, and outline injection for Obsidian",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {

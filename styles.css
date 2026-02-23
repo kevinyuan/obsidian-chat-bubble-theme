@@ -461,5 +461,13 @@ body.chat-bubble-theme-active.cbt-code-light .markdown-rendered pre .copy-code-b
   background-color: rgba(0, 0, 0, 0.06) !important;
 }
 
+/* ===== Resizable settings modal ===== */
+.modal.mod-settings {
+  resize: both;
+  overflow: hidden;
+  max-width: 100vw;
+  max-height: 100vh;
+}
+
 /* ===== Palette swatch active style (settings UI) ===== */
 .palette-swatch.is-active { border-color: #555 !important; }
