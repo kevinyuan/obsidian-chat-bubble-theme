@@ -31,7 +31,7 @@ All theme styling is dynamically generated from plugin settings, giving full con
 
 Accessible from **Settings > Community plugins > Chat Bubble Theme Plugin** (gear icon).
 
-<img src="screenshots/settings.png" width="520" alt="Settings">
+<img src="screenshots/settings.png" alt="Settings">
 
 | Group | Options |
 |-------|---------|
