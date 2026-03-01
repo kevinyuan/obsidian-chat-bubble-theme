@@ -566,7 +566,7 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Enable theme")
-			.setDesc("Apply theme styling to markdown views.")
+			.setDesc("Apply theme styling to Markdown views.")
 			.addToggle((t) =>
 				t.setValue(this.plugin.settings.enableThemeCSS).onChange(async (v) => {
 					this.plugin.settings.enableThemeCSS = v;
