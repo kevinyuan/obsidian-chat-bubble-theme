@@ -1,4 +1,4 @@
-import { Plugin, PluginSettingTab, Setting, App, TFile, HeadingCache } from "obsidian";
+import { Plugin, PluginSettingTab, Setting, App, TFile, HeadingCache, ColorComponent } from "obsidian";
 
 // ── Theme Presets ────────────────────────────────────────────
 
@@ -433,7 +433,9 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 		const setting = new Setting(containerEl)
 			.setName(name);
 		if (desc) setting.setDesc(desc);
+		let colorPicker: ColorComponent | undefined;
 		setting.addColorPicker((cp) => {
+			colorPicker = cp;
 			cp.setValue(getValue()).onChange(async (v) => {
 				setValue(v);
 				await this.plugin.saveSettings();
@@ -445,31 +447,24 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 		});
 
 		const swatchContainer = setting.controlEl.createDiv({ cls: "palette-swatches" });
-		swatchContainer.style.display = "flex";
-		swatchContainer.style.flexWrap = "wrap";
-		swatchContainer.style.gap = "4px";
-		swatchContainer.style.marginRight = "8px";
 
 		const current = getValue().toUpperCase();
 		const palette = THEME_PRESETS[this.plugin.settings.themePreset].palette;
 		for (const color of palette) {
 			const swatch = swatchContainer.createEl("button", { cls: "palette-swatch" });
 			swatch.dataset.color = color.toUpperCase();
-			Object.assign(swatch.style, {
-				width: "20px", height: "20px", borderRadius: "50%",
-				backgroundColor: color, border: "2px solid transparent",
-				cursor: "pointer", padding: "0", flexShrink: "0",
-			});
+			swatch.style.backgroundColor = color;
 			if (color.toUpperCase() === current) swatch.classList.add("is-active");
-			swatch.addEventListener("click", async () => {
-				setValue(color);
-				await this.plugin.saveSettings();
-				this.plugin._applyCSS();
-				// Update the color picker visually
-				(setting.components[0] as any)?.setValue?.(color);
-				swatchContainer.querySelectorAll<HTMLElement>(".palette-swatch").forEach((s) => {
-					s.classList.toggle("is-active", s.dataset.color === color.toUpperCase());
-				});
+			swatch.addEventListener("click", () => {
+				void (async () => {
+					setValue(color);
+					await this.plugin.saveSettings();
+					this.plugin._applyCSS();
+					colorPicker?.setValue(color);
+					swatchContainer.querySelectorAll<HTMLElement>(".palette-swatch").forEach((s) => {
+						s.classList.toggle("is-active", s.dataset.color === color.toUpperCase());
+					});
+				})();
 			});
 		}
 
@@ -483,40 +478,30 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			.setDesc("Overwrites colors below.");
 
 		const pickerContainer = setting.controlEl.createDiv({ cls: "theme-preset-picker" });
-		Object.assign(pickerContainer.style, {
-			display: "flex", gap: "8px",
-		});
 
 		const currentKey = this.plugin.settings.themePreset;
 		for (const key of Object.keys(THEME_PRESETS) as ThemePresetKey[]) {
 			const theme = THEME_PRESETS[key];
 			const btn = pickerContainer.createDiv({ cls: "theme-preset-btn" });
-			Object.assign(btn.style, {
-				display: "flex", flexDirection: "column", alignItems: "center",
-				gap: "4px", padding: "4px 8px",
-				cursor: "pointer", fontSize: "0.8em",
-			});
 
-			const swatch = btn.createEl("span");
-			Object.assign(swatch.style, {
-				width: "28px", height: "28px", borderRadius: "50%",
-				backgroundColor: theme.defaults.chatRBubbleColor,
-				border: key === currentKey ? "2.5px solid #555" : "1px solid rgba(0,0,0,0.1)",
-				flexShrink: "0",
-			});
+			const swatch = btn.createEl("span", { cls: "theme-preset-swatch" });
+			swatch.style.backgroundColor = theme.defaults.chatRBubbleColor;
+			if (key === currentKey) swatch.classList.add("is-active");
 
 			btn.createEl("span", { text: theme.label });
 
-			btn.addEventListener("click", async () => {
-				this.plugin.settings.themePreset = key;
-				const d = theme.defaults;
-				this.plugin.settings.markdownBgColor = d.markdownBgColor;
-				this.plugin.settings.chatRBubbleColor = d.chatRBubbleColor;
-				this.plugin.settings.chatLBubbleColor = d.chatLBubbleColor;
-				this.plugin.settings.tableHeaderBorderColor = d.tableHeaderBorderColor;
-				await this.plugin.saveSettings();
-				this.plugin._applyCSS();
-				this.display();
+			btn.addEventListener("click", () => {
+				void (async () => {
+					this.plugin.settings.themePreset = key;
+					const d = theme.defaults;
+					this.plugin.settings.markdownBgColor = d.markdownBgColor;
+					this.plugin.settings.chatRBubbleColor = d.chatRBubbleColor;
+					this.plugin.settings.chatLBubbleColor = d.chatLBubbleColor;
+					this.plugin.settings.tableHeaderBorderColor = d.tableHeaderBorderColor;
+					await this.plugin.saveSettings();
+					this.plugin._applyCSS();
+					this.display();
+				})();
 			});
 		}
 	}
@@ -541,27 +526,20 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 		];
 
 		const pickerContainer = setting.controlEl.createDiv({ cls: "indicator-picker" });
-		Object.assign(pickerContainer.style, {
-			display: "flex", gap: "4px", flexWrap: "wrap",
-		});
 
 		const current = this.plugin.settings.calloutIndicator;
 		for (const opt of indicators) {
 			const btn = pickerContainer.createDiv({ cls: "indicator-btn" });
-			Object.assign(btn.style, {
-				width: "28px", height: "28px",
-				display: "flex", alignItems: "center", justifyContent: "center",
-				cursor: "pointer", fontSize: "1.1em",
-				borderRadius: "50%",
-				border: opt.key === current ? "2.5px solid #555" : "1px solid rgba(0,0,0,0.1)",
-			});
+			if (opt.key === current) btn.classList.add("is-active");
 			btn.textContent = opt.emoji;
 
-			btn.addEventListener("click", async () => {
-				this.plugin.settings.calloutIndicator = opt.key;
-				await this.plugin.saveSettings();
-				this.plugin._applyCSS();
-				this.display();
+			btn.addEventListener("click", () => {
+				void (async () => {
+					this.plugin.settings.calloutIndicator = opt.key;
+					await this.plugin.saveSettings();
+					this.plugin._applyCSS();
+					this.display();
+				})();
 			});
 		}
 	}
@@ -588,7 +566,7 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Enable theme")
-			.setDesc("Apply theme CSS to markdown views.")
+			.setDesc("Apply theme styling to markdown views.")
 			.addToggle((t) =>
 				t.setValue(this.plugin.settings.enableThemeCSS).onChange(async (v) => {
 					this.plugin.settings.enableThemeCSS = v;
@@ -719,9 +697,9 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Chat-r prefix")
-			.setDesc("Text prepended to user questions in the outline (e.g. \"Q:\").")
+			.setDesc("Text prepended to user questions in the outline.")
 			.addText((t) =>
-				t.setPlaceholder("e.g. Q:").setValue(this.plugin.settings.chatRPrefix)
+				t.setPlaceholder("Q:").setValue(this.plugin.settings.chatRPrefix)
 					.onChange(async (v) => {
 						this.plugin.settings.chatRPrefix = v;
 						await this.plugin.saveSettings();
@@ -730,9 +708,9 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Chat-l prefix")
-			.setDesc("Text prepended to responses in the outline (e.g. \"A:\").")
+			.setDesc("Text prepended to responses in the outline.")
 			.addText((t) =>
-				t.setPlaceholder("e.g. A:").setValue(this.plugin.settings.chatLPrefix)
+				t.setPlaceholder("A:").setValue(this.plugin.settings.chatLPrefix)
 					.onChange(async (v) => {
 						this.plugin.settings.chatLPrefix = v;
 						await this.plugin.saveSettings();
