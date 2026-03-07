@@ -7,6 +7,8 @@ An Obsidian theme plugin with 4 color presets (Lavender, Warm, Ocean, Forest), c
 Obsidian themes are CSS-only and cannot execute JavaScript. This plugin adds one feature that requires JS:
 
 - **Chat callout outline injection** — parses `> [!chat-r]` and `> [!chat-l]` callouts and injects them as virtual headings into Obsidian's metadata cache, so they appear in the Outline pane (including Quiet Outline).
+- **Sticky outline** — keeps the Outline pane showing the last active markdown file when focus moves to a non-editor view (e.g. terminal).
+- **Multi-language UI** — settings panel automatically follows Obsidian's global language setting (English, 简体中文, 繁體中文, Français).
 
 All theme styling is dynamically generated from plugin settings, giving full control over colors, sizes, and features without editing CSS.
 
@@ -26,6 +28,8 @@ All theme styling is dynamically generated from plugin settings, giving full con
 - Chat bubble callouts (`chat-r` for right-aligned, `chat-l` for left-aligned)
 - Styled inline code, blockquotes, links, and lists
 - Chat callouts visible in Outline / Quiet Outline as configurable heading entries
+- Sticky outline — retains the last markdown file's outline when a terminal or other non-editor view gets focus
+- Multi-language settings UI — English, Simplified Chinese, Traditional Chinese, French; auto-detected from Obsidian's language setting
 
 ## Settings
 
@@ -38,9 +42,22 @@ Accessible from **Settings > Community plugins > Chat Bubble Theme Plugin** (gea
 | **Reset** | Reset all settings to defaults with one click |
 | **Theme** | Theme preset (Lavender / Warm / Ocean / Forest), enable/disable theme, markdown background color, table corner radius, table header & border color, code block dark/light theme, code block corner radius, checkbox strikethrough |
 | **Chat Bubbles** | Callout indicator (none / 💬 / colored circle emojis), user (chat-r) and response (chat-l) bubble colors, max bubble width |
-| **Outline Injection** | Enable/disable injection, per-callout toggle, heading prefix (e.g. "Q:" / "A:"), heading level, max display length |
+| **Outline** | Sticky outline (retain last markdown file's outline when terminal gets focus), enable/disable injection, per-callout toggle, heading prefix (e.g. "Q:" / "A:"), heading level, max display length |
 
 Color settings include a **preset palette** of theme-matched swatches (with white/black endpoints) alongside the standard color picker for quick selection.
+
+## Localization
+
+The settings panel is fully localized and automatically follows Obsidian's global language setting (**Settings > General > Language**). Supported languages:
+
+| Language | Code |
+|----------|------|
+| English | `en` |
+| 简体中文 | `zh` |
+| 繁體中文 | `zh-TW` |
+| Français | `fr` |
+
+No configuration needed — switching Obsidian's language and reopening the settings tab applies the new language immediately.
 
 ## Installation
 

@@ -1,4 +1,5 @@
-import { Plugin, PluginSettingTab, Setting, App, TFile, HeadingCache, ColorComponent } from "obsidian";
+import { Plugin, PluginSettingTab, Setting, App, TFile, HeadingCache, ColorComponent, WorkspaceLeaf, MarkdownView } from "obsidian";
+import { t } from "./i18n";
 
 // ── Theme Presets ────────────────────────────────────────────
 
@@ -144,6 +145,8 @@ interface PluginSettings {
 	tableRadius: number;
 	tableHeaderBorderColor: string;
 	codeBlockDarkTheme: boolean;
+	// Sticky Outline
+	stickyOutline: boolean;
 	// Chat Bubbles
 	calloutIndicator: string;
 	chatRBubbleColor: string;
@@ -161,6 +164,7 @@ interface PluginSettings {
 
 const DEFAULT_SETTINGS: PluginSettings = {
 	themePreset: "lavender",
+	stickyOutline: true,
 	enableThemeCSS: true,
 	markdownBgColor: "#FFFFFF",
 	codeBlockRadius: 14,
@@ -186,6 +190,9 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 	private _calloutCache: Map<string, HeadingCache[]> = new Map();
 	private _updating = false;
 	private _originalGetFileCache: ((file: TFile) => ReturnType<typeof this.app.metadataCache.getFileCache>) | null = null;
+	private _lastMarkdownLeaf: WorkspaceLeaf | null = null;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private _originalGetActiveViewOfType: ((type: any) => any) | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -193,6 +200,20 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 
 		// Apply CSS variables and body class
 		this._applyCSS();
+
+		// Monkey-patch workspace.getActiveViewOfType for sticky outline
+		this._originalGetActiveViewOfType = this.app.workspace.getActiveViewOfType.bind(this.app.workspace);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(this.app.workspace as any).getActiveViewOfType = <T>(type: new (...args: unknown[]) => T): T | null => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const result = (this._originalGetActiveViewOfType as any)(type);
+			if (!result && this.settings.stickyOutline && this._lastMarkdownLeaf) {
+				if (this._lastMarkdownLeaf.view instanceof (type as new (...args: unknown[]) => object)) {
+					return this._lastMarkdownLeaf.view as T;
+				}
+			}
+			return result;
+		};
 
 		// Monkey-patch metadataCache.getFileCache
 		this._originalGetFileCache = this.app.metadataCache.getFileCache.bind(
@@ -210,9 +231,24 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 		);
 
 		this.registerEvent(
-			this.app.workspace.on("active-leaf-change", () => {
+			this.app.workspace.on("active-leaf-change", (leaf) => {
+				if (leaf?.view instanceof MarkdownView) {
+					this._lastMarkdownLeaf = leaf;
+				}
 				const file = this.app.workspace.getActiveFile();
 				if (file) void this._updateCallouts(file);
+			})
+		);
+
+		this.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				if (file instanceof TFile) this._onFileDelete(file);
+			})
+		);
+
+		this.registerEvent(
+			this.app.vault.on("rename", (file, oldPath) => {
+				if (file instanceof TFile) this._onFileRename(file, oldPath);
 			})
 		);
 
@@ -220,7 +256,23 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 		if (activeFile) void this._updateCallouts(activeFile);
 	}
 
+	private _onFileDelete = (file: TFile) => {
+		this._calloutCache.delete(file.path);
+	};
+
+	private _onFileRename = (file: TFile, oldPath: string) => {
+		const cached = this._calloutCache.get(oldPath);
+		if (cached) {
+			this._calloutCache.delete(oldPath);
+			this._calloutCache.set(file.path, cached);
+		}
+	};
+
 	onunload() {
+		if (this._originalGetActiveViewOfType) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(this.app.workspace as any).getActiveViewOfType = this._originalGetActiveViewOfType;
+		}
 		if (this._originalGetFileCache) {
 			this.app.metadataCache.getFileCache = this._originalGetFileCache;
 		}
@@ -474,8 +526,8 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 
 	private _addThemePresetPicker(containerEl: HTMLElement): void {
 		const setting = new Setting(containerEl)
-			.setName("Theme preset")
-			.setDesc("Overwrites colors below.");
+			.setName(t().themePresetName)
+			.setDesc(t().themePresetDesc);
 
 		const pickerContainer = setting.controlEl.createDiv({ cls: "theme-preset-picker" });
 
@@ -508,8 +560,8 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 
 	private _addIndicatorPicker(containerEl: HTMLElement): void {
 		const setting = new Setting(containerEl)
-			.setName("Callout indicator")
-			.setDesc("Emoji before each bubble.");
+			.setName(t().calloutIndicatorName)
+			.setDesc(t().calloutIndicatorDesc);
 
 		const indicators = [
 			{ key: "none", emoji: "—" },
@@ -550,10 +602,10 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 
 		// ── Reset ──
 		new Setting(containerEl)
-			.setName("Reset all settings")
-			.setDesc("Restore every option to its default value.")
+			.setName(t().resetName)
+			.setDesc(t().resetDesc)
 			.addButton((b) =>
-				b.setButtonText("Reset to defaults").onClick(async () => {
+				b.setButtonText(t().resetBtn).onClick(async () => {
 					this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
 					await this.plugin.saveSettings();
 					this.plugin._applyCSS();
@@ -562,13 +614,13 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			);
 
 		// ── Theme ──
-		new Setting(containerEl).setName("Theme").setHeading();
+		new Setting(containerEl).setName(t().themeHeading).setHeading();
 
 		new Setting(containerEl)
-			.setName("Enable theme")
-			.setDesc("Apply theme styling to Markdown views.")
-			.addToggle((t) =>
-				t.setValue(this.plugin.settings.enableThemeCSS).onChange(async (v) => {
+			.setName(t().enableThemeName)
+			.setDesc(t().enableThemeDesc)
+			.addToggle((tog) =>
+				tog.setValue(this.plugin.settings.enableThemeCSS).onChange(async (v) => {
 					this.plugin.settings.enableThemeCSS = v;
 					await this.plugin.saveSettings();
 					this.plugin._applyCSS();
@@ -578,14 +630,14 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 		this._addThemePresetPicker(containerEl);
 
 		this._addColorSettingWithPalette(
-			containerEl, "Markdown background color", "",
+			containerEl, t().markdownBgName, "",
 			() => this.plugin.settings.markdownBgColor,
 			(v) => { this.plugin.settings.markdownBgColor = v; },
 		);
 
 		new Setting(containerEl)
-			.setName("Table corner radius")
-			.setDesc("Border radius for tables in pixels (0–20).")
+			.setName(t().tableRadiusName)
+			.setDesc(t().tableRadiusDesc)
 			.addSlider((s) =>
 				s.setLimits(0, 20, 1).setValue(this.plugin.settings.tableRadius)
 					.setDynamicTooltip().onChange(async (v) => {
@@ -596,16 +648,16 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			);
 
 		this._addColorSettingWithPalette(
-			containerEl, "Table header & border color", "",
+			containerEl, t().tableHeaderColorName, "",
 			() => this.plugin.settings.tableHeaderBorderColor,
 			(v) => { this.plugin.settings.tableHeaderBorderColor = v; },
 		);
 
 		new Setting(containerEl)
-			.setName("Code block dark theme")
-			.setDesc("Use dark background for code blocks. Disable for a light code block style.")
-			.addToggle((t) =>
-				t.setValue(this.plugin.settings.codeBlockDarkTheme).onChange(async (v) => {
+			.setName(t().codeBlockDarkName)
+			.setDesc(t().codeBlockDarkDesc)
+			.addToggle((tog) =>
+				tog.setValue(this.plugin.settings.codeBlockDarkTheme).onChange(async (v) => {
 					this.plugin.settings.codeBlockDarkTheme = v;
 					await this.plugin.saveSettings();
 					this.plugin._applyCSS();
@@ -613,8 +665,8 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Code block corner radius")
-			.setDesc("Border radius for code blocks in pixels (0–30).")
+			.setName(t().codeBlockRadiusName)
+			.setDesc(t().codeBlockRadiusDesc)
 			.addSlider((s) =>
 				s.setLimits(0, 30, 1).setValue(this.plugin.settings.codeBlockRadius)
 					.setDynamicTooltip().onChange(async (v) => {
@@ -625,10 +677,10 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Checkbox strikethrough")
-			.setDesc("Show strikethrough on completed checkboxes.")
-			.addToggle((t) =>
-				t.setValue(this.plugin.settings.checkboxStrikethrough).onChange(async (v) => {
+			.setName(t().checkboxStrikeName)
+			.setDesc(t().checkboxStrikeDesc)
+			.addToggle((tog) =>
+				tog.setValue(this.plugin.settings.checkboxStrikethrough).onChange(async (v) => {
 					this.plugin.settings.checkboxStrikethrough = v;
 					await this.plugin.saveSettings();
 					this.plugin._applyCSS();
@@ -636,25 +688,25 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			);
 
 		// ── Chat bubbles ──
-		new Setting(containerEl).setName("Chat bubbles").setHeading();
+		new Setting(containerEl).setName(t().chatBubblesHeading).setHeading();
 
 		this._addIndicatorPicker(containerEl);
 
 		this._addColorSettingWithPalette(
-			containerEl, "User bubble color (chat-r)", "",
+			containerEl, t().chatRColorName, "",
 			() => this.plugin.settings.chatRBubbleColor,
 			(v) => { this.plugin.settings.chatRBubbleColor = v; },
 		);
 
 		this._addColorSettingWithPalette(
-			containerEl, "Response bubble color (chat-l)", "",
+			containerEl, t().chatLColorName, "",
 			() => this.plugin.settings.chatLBubbleColor,
 			(v) => { this.plugin.settings.chatLBubbleColor = v; },
 		);
 
 		new Setting(containerEl)
-			.setName("Bubble max width")
-			.setDesc("Maximum width of chat bubbles as a percentage (30–100%).")
+			.setName(t().bubbleMaxWidthName)
+			.setDesc(t().bubbleMaxWidthDesc)
 			.addSlider((s) =>
 				s.setLimits(30, 100, 5).setValue(this.plugin.settings.chatBubbleMaxWidth)
 					.setDynamicTooltip().onChange(async (v) => {
@@ -664,42 +716,52 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ── Outline injection ──
-		new Setting(containerEl).setName("Outline injection").setHeading();
+		// ── Outline ──
+		new Setting(containerEl).setName(t().outlineHeading).setHeading();
 
 		new Setting(containerEl)
-			.setName("Enable outline injection")
-			.setDesc("Inject chat callouts as headings in the outline panel.")
-			.addToggle((t) =>
-				t.setValue(this.plugin.settings.enableOutlineInjection).onChange(async (v) => {
+			.setName(t().stickyOutlineName)
+			.setDesc(t().stickyOutlineDesc)
+			.addToggle((tog) =>
+				tog.setValue(this.plugin.settings.stickyOutline).onChange(async (v) => {
+					this.plugin.settings.stickyOutline = v;
+					await this.plugin.saveSettings();
+				})
+			);
+
+		new Setting(containerEl)
+			.setName(t().enableInjectionName)
+			.setDesc(t().enableInjectionDesc)
+			.addToggle((tog) =>
+				tog.setValue(this.plugin.settings.enableOutlineInjection).onChange(async (v) => {
 					this.plugin.settings.enableOutlineInjection = v;
 					await this.plugin.saveSettings();
 				})
 			);
 
 		new Setting(containerEl)
-			.setName("Inject chat-r (user questions)")
-			.addToggle((t) =>
-				t.setValue(this.plugin.settings.injectChatR).onChange(async (v) => {
+			.setName(t().injectChatRName)
+			.addToggle((tog) =>
+				tog.setValue(this.plugin.settings.injectChatR).onChange(async (v) => {
 					this.plugin.settings.injectChatR = v;
 					await this.plugin.saveSettings();
 				})
 			);
 
 		new Setting(containerEl)
-			.setName("Inject chat-l (responses)")
-			.addToggle((t) =>
-				t.setValue(this.plugin.settings.injectChatL).onChange(async (v) => {
+			.setName(t().injectChatLName)
+			.addToggle((tog) =>
+				tog.setValue(this.plugin.settings.injectChatL).onChange(async (v) => {
 					this.plugin.settings.injectChatL = v;
 					await this.plugin.saveSettings();
 				})
 			);
 
 		new Setting(containerEl)
-			.setName("Chat-r prefix")
-			.setDesc("Text prepended to user questions in the outline.")
-			.addText((t) =>
-				t.setPlaceholder("Q:").setValue(this.plugin.settings.chatRPrefix)
+			.setName(t().chatRPrefixName)
+			.setDesc(t().chatRPrefixDesc)
+			.addText((tx) =>
+				tx.setPlaceholder("Q:").setValue(this.plugin.settings.chatRPrefix)
 					.onChange(async (v) => {
 						this.plugin.settings.chatRPrefix = v;
 						await this.plugin.saveSettings();
@@ -707,10 +769,10 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Chat-l prefix")
-			.setDesc("Text prepended to responses in the outline.")
-			.addText((t) =>
-				t.setPlaceholder("A:").setValue(this.plugin.settings.chatLPrefix)
+			.setName(t().chatLPrefixName)
+			.setDesc(t().chatLPrefixDesc)
+			.addText((tx) =>
+				tx.setPlaceholder("A:").setValue(this.plugin.settings.chatLPrefix)
 					.onChange(async (v) => {
 						this.plugin.settings.chatLPrefix = v;
 						await this.plugin.saveSettings();
@@ -718,8 +780,8 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Heading level")
-			.setDesc("Outline heading level for injected callouts (1–6).")
+			.setName(t().headingLevelName)
+			.setDesc(t().headingLevelDesc)
 			.addSlider((s) =>
 				s.setLimits(1, 6, 1).setValue(this.plugin.settings.headingLevel)
 					.setDynamicTooltip().onChange(async (v) => {
@@ -729,8 +791,8 @@ class ChatCalloutOutlineSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Max display length")
-			.setDesc("Truncate callout text in the outline after this many characters.")
+			.setName(t().maxLengthName)
+			.setDesc(t().maxLengthDesc)
 			.addSlider((s) =>
 				s.setLimits(30, 200, 10).setValue(this.plugin.settings.maxDisplayLength)
 					.setDynamicTooltip().onChange(async (v) => {
