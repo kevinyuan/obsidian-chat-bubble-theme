@@ -191,8 +191,7 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 	private _updating = false;
 	private _originalGetFileCache: ((file: TFile) => ReturnType<typeof this.app.metadataCache.getFileCache>) | null = null;
 	private _lastMarkdownLeaf: WorkspaceLeaf | null = null;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	private _originalGetActiveViewOfType: ((type: any) => any) | null = null;
+	private _originalGetActiveViewOfType: (<T>(type: new (...args: unknown[]) => T) => T | null) | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -202,11 +201,9 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 		this._applyCSS();
 
 		// Monkey-patch workspace.getActiveViewOfType for sticky outline
-		this._originalGetActiveViewOfType = this.app.workspace.getActiveViewOfType.bind(this.app.workspace);
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(this.app.workspace as any).getActiveViewOfType = <T>(type: new (...args: unknown[]) => T): T | null => {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const result = (this._originalGetActiveViewOfType as any)(type);
+		this._originalGetActiveViewOfType = this.app.workspace.getActiveViewOfType.bind(this.app.workspace) as <T>(type: new (...args: unknown[]) => T) => T | null;
+		(this.app.workspace as unknown as { getActiveViewOfType: <T>(type: new (...args: unknown[]) => T) => T | null }).getActiveViewOfType = <T>(type: new (...args: unknown[]) => T): T | null => {
+			const result = this._originalGetActiveViewOfType!(type);
 			if (!result && this.settings.stickyOutline && this._lastMarkdownLeaf) {
 				if (this._lastMarkdownLeaf.view instanceof (type as new (...args: unknown[]) => object)) {
 					return this._lastMarkdownLeaf.view as T;
@@ -270,8 +267,7 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 
 	onunload() {
 		if (this._originalGetActiveViewOfType) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(this.app.workspace as any).getActiveViewOfType = this._originalGetActiveViewOfType;
+			(this.app.workspace as unknown as { getActiveViewOfType: <T>(type: new (...args: unknown[]) => T) => T | null }).getActiveViewOfType = this._originalGetActiveViewOfType;
 		}
 		if (this._originalGetFileCache) {
 			this.app.metadataCache.getFileCache = this._originalGetFileCache;
