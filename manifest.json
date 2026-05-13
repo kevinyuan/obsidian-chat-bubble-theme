@@ -1,11 +1,11 @@
 {
-  "id": "chat-bubble-theme",
-  "name": "Chat Bubble Theme",
-  "version": "1.1.0",
-  "minAppVersion": "1.0.0",
-  "description": "Theme plugin with 4 color presets, chat bubble callouts, and outline injection.",
-  "author": "Kevin",
-  "authorUrl": "https://github.com/kevinyuan",
-  "fundingUrl": "https://github.com/kevinyuan",
-  "isDesktopOnly": false
+	"id": "chat-bubble-theme",
+	"name": "Chat Bubble Theme",
+	"version": "1.1.1",
+	"minAppVersion": "1.0.0",
+	"description": "Theme plugin with 4 color presets, chat bubble callouts, and outline injection.",
+	"author": "Kevin",
+	"authorUrl": "https://github.com/kevinyuan",
+	"fundingUrl": "https://github.com/kevinyuan",
+	"isDesktopOnly": false
 }
