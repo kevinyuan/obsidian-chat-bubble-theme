@@ -18,6 +18,10 @@ body.chat-bubble-theme-active {
   --cbt-table-radius: 8px;
   --cbt-table-border-color: #D9C7B8;
   --cbt-table-header-bg: rgb(243, 237, 232);
+  --hr-color: var(--cbt-border-color);
+  --blockquote-border-color: var(--cbt-q-border-color);
+  --blockquote-border-thickness: 3px;
+  --blockquote-background-color: transparent;
 }
 
 /* ===== Markdown Area Background ===== */
@@ -74,8 +78,6 @@ body.chat-bubble-theme-active .markdown-rendered h4 { font-size: 1.0em; }
 
 /* ===== Horizontal Rule ===== */
 body.chat-bubble-theme-active .markdown-preview-view hr,
-body.chat-bubble-theme-active .markdown-rendered hr,
-body.chat-bubble-theme-active .markdown-preview-view hr,
 body.chat-bubble-theme-active .markdown-rendered hr {
   border: none;
   border-top: 1px solid var(--cbt-border-color);
@@ -85,14 +87,7 @@ body.chat-bubble-theme-active .markdown-rendered hr {
   height: 1px;
   color: var(--cbt-border-color);
 }
-body.chat-bubble-theme-active { --hr-color: var(--cbt-border-color); }
-
 /* ===== Blockquote ===== */
-body.chat-bubble-theme-active {
-  --blockquote-border-color: var(--cbt-q-border-color);
-  --blockquote-border-thickness: 3px;
-  --blockquote-background-color: transparent;
-}
 body.chat-bubble-theme-active .markdown-preview-view blockquote,
 body.chat-bubble-theme-active .markdown-rendered blockquote {
   border-left: 3px solid var(--cbt-q-border-color);
@@ -414,20 +409,9 @@ body.chat-bubble-theme-active.cbt-indicator-speech .callout[data-callout="chat-l
 }
 
 /* ===== Checkbox — No Strikethrough ===== */
-body.chat-bubble-theme-active.cbt-no-strikethrough .HyperMD-task-line[data-task="x"],
-body.chat-bubble-theme-active.cbt-no-strikethrough .HyperMD-task-line[data-task="X"],
-body.chat-bubble-theme-active.cbt-no-strikethrough .HyperMD-task-line[data-task="x"] span,
-body.chat-bubble-theme-active.cbt-no-strikethrough .HyperMD-task-line[data-task="X"] span,
-body.chat-bubble-theme-active.cbt-no-strikethrough .HyperMD-task-line[data-task="x"] .cm-list-1,
-body.chat-bubble-theme-active.cbt-no-strikethrough .HyperMD-task-line[data-task="X"] .cm-list-1 { text-decoration: none !important; }
-body.chat-bubble-theme-active.cbt-no-strikethrough .markdown-rendered .task-list-item.is-checked,
-body.chat-bubble-theme-active.cbt-no-strikethrough .markdown-rendered .task-list-item.is-checked p,
-body.chat-bubble-theme-active.cbt-no-strikethrough .markdown-rendered .task-list-item.is-checked a,
-body.chat-bubble-theme-active.cbt-no-strikethrough .markdown-rendered .task-list-item.is-checked span,
-body.chat-bubble-theme-active.cbt-no-strikethrough .markdown-rendered .task-list-item[data-task="x"],
-body.chat-bubble-theme-active.cbt-no-strikethrough .markdown-rendered .task-list-item[data-task="x"] p,
-body.chat-bubble-theme-active.cbt-no-strikethrough .markdown-rendered .task-list-item[data-task="X"],
-body.chat-bubble-theme-active.cbt-no-strikethrough .markdown-rendered .task-list-item[data-task="X"] p { text-decoration: none !important; }
+body.chat-bubble-theme-active.cbt-no-strikethrough {
+  --checklist-done-decoration: none;
+}
 
 /* ===== Code Block Light Theme ===== */
 body.chat-bubble-theme-active.cbt-code-light .markdown-preview-view pre,
@@ -486,7 +470,7 @@ body.chat-bubble-theme-active.cbt-code-light .markdown-rendered pre .copy-code-b
   padding: 0;
   flex-shrink: 0;
 }
-.palette-swatch.is-active { border-color: #555 !important; }
+.palette-swatch.is-active { border-color: #555555; }
 
 .theme-preset-picker {
   display: flex;
@@ -510,7 +494,7 @@ body.chat-bubble-theme-active.cbt-code-light .markdown-rendered pre .copy-code-b
   flex-shrink: 0;
   border: 1px solid rgba(0,0,0,0.1);
 }
-.theme-preset-swatch.is-active { border: 2.5px solid #555; }
+.theme-preset-swatch.is-active { border: 2.5px solid #555555; }
 
 .indicator-picker {
   display: flex;
@@ -529,4 +513,4 @@ body.chat-bubble-theme-active.cbt-code-light .markdown-rendered pre .copy-code-b
   border-radius: 50%;
   border: 1px solid rgba(0,0,0,0.1);
 }
-.indicator-btn.is-active { border: 2.5px solid #555; }
+.indicator-btn.is-active { border: 2.5px solid #555555; }
