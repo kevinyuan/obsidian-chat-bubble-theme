@@ -274,13 +274,13 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 		}
 		this._calloutCache.clear();
 		// Remove body classes and CSS variables
-		document.body.classList.remove("chat-bubble-theme-active", "cbt-no-strikethrough", "cbt-code-light", "cbt-indicator-dot", "cbt-indicator-speech");
-		document.body.style.removeProperty("--cbt-indicator-emoji");
+		activeDocument.body.classList.remove("chat-bubble-theme-active", "cbt-no-strikethrough", "cbt-code-light", "cbt-indicator-dot", "cbt-indicator-speech");
+		activeDocument.body.style.removeProperty("--cbt-indicator-emoji");
 		this._removeCSSVariables();
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<PluginSettings>);
 	}
 
 	async saveSettings() {
@@ -291,62 +291,62 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 
 	_applyCSS() {
 		if (this.settings.enableThemeCSS) {
-			document.body.classList.add("chat-bubble-theme-active");
+			activeDocument.body.classList.add("chat-bubble-theme-active");
 			this._setCSSVariables();
 		} else {
-			document.body.classList.remove("chat-bubble-theme-active");
+			activeDocument.body.classList.remove("chat-bubble-theme-active");
 			this._removeCSSVariables();
 		}
 
 		if (!this.settings.checkboxStrikethrough) {
-			document.body.classList.add("cbt-no-strikethrough");
+			activeDocument.body.classList.add("cbt-no-strikethrough");
 		} else {
-			document.body.classList.remove("cbt-no-strikethrough");
+			activeDocument.body.classList.remove("cbt-no-strikethrough");
 		}
 
 		if (!this.settings.codeBlockDarkTheme) {
-			document.body.classList.add("cbt-code-light");
+			activeDocument.body.classList.add("cbt-code-light");
 		} else {
-			document.body.classList.remove("cbt-code-light");
+			activeDocument.body.classList.remove("cbt-code-light");
 		}
 
-		document.body.classList.remove("cbt-indicator-dot", "cbt-indicator-speech");
+		activeDocument.body.classList.remove("cbt-indicator-dot", "cbt-indicator-speech");
 		const ind = this.settings.calloutIndicator;
 		if (ind === "speech") {
-			document.body.classList.add("cbt-indicator-speech");
+			activeDocument.body.classList.add("cbt-indicator-speech");
 		} else if (ind && ind !== "none") {
-			document.body.classList.add("cbt-indicator-dot");
-			document.body.style.setProperty("--cbt-indicator-emoji", `"${ind}"`);
+			activeDocument.body.classList.add("cbt-indicator-dot");
+			activeDocument.body.style.setProperty("--cbt-indicator-emoji", `"${ind}"`);
 		}
 	}
 
 	private _setCSSVariables() {
 		const s = this.settings;
 		const theme = THEME_PRESETS[s.themePreset];
-		document.body.style.setProperty("--cbt-bg", s.markdownBgColor);
-		document.body.style.setProperty("--cbt-radius", s.codeBlockRadius + "px");
-		document.body.style.setProperty("--cbt-chat-r-bg", s.chatRBubbleColor);
-		document.body.style.setProperty("--cbt-chat-l-bg", s.chatLBubbleColor);
-		document.body.style.setProperty("--cbt-chat-max-w", s.chatBubbleMaxWidth + "%");
-		document.body.style.setProperty("--cbt-table-radius", s.tableRadius + "px");
-		document.body.style.setProperty("--cbt-table-border-color", s.tableHeaderBorderColor);
+		activeDocument.body.style.setProperty("--cbt-bg", s.markdownBgColor);
+		activeDocument.body.style.setProperty("--cbt-radius", s.codeBlockRadius + "px");
+		activeDocument.body.style.setProperty("--cbt-chat-r-bg", s.chatRBubbleColor);
+		activeDocument.body.style.setProperty("--cbt-chat-l-bg", s.chatLBubbleColor);
+		activeDocument.body.style.setProperty("--cbt-chat-max-w", s.chatBubbleMaxWidth + "%");
+		activeDocument.body.style.setProperty("--cbt-table-radius", s.tableRadius + "px");
+		activeDocument.body.style.setProperty("--cbt-table-border-color", s.tableHeaderBorderColor);
 		// Derive header bg by mixing border color with white (30% color, 70% white)
 		const hex = s.tableHeaderBorderColor.replace("#", "");
 		const r = Math.round(parseInt(hex.substring(0, 2), 16) * 0.3 + 255 * 0.7);
 		const g = Math.round(parseInt(hex.substring(2, 4), 16) * 0.3 + 255 * 0.7);
 		const b = Math.round(parseInt(hex.substring(4, 6), 16) * 0.3 + 255 * 0.7);
-		document.body.style.setProperty("--cbt-table-header-bg", `rgb(${r}, ${g}, ${b})`);
+		activeDocument.body.style.setProperty("--cbt-table-header-bg", `rgb(${r}, ${g}, ${b})`);
 		// Theme-driven CSS vars
-		document.body.style.setProperty("--cbt-text-color", theme.css.textColor);
-		document.body.style.setProperty("--cbt-heading-color", theme.css.headingColor);
-		document.body.style.setProperty("--cbt-border-color", theme.css.borderColor);
-		document.body.style.setProperty("--cbt-q-border-color", theme.css.qBorderColor);
-		document.body.style.setProperty("--cbt-link-color", theme.css.linkColor);
-		document.body.style.setProperty("--cbt-inline-code-bg", theme.css.inlineCodeBg);
-		document.body.style.setProperty("--cbt-inline-code-color", theme.css.inlineCodeColor);
-		document.body.style.setProperty("--cbt-emphasis-color", theme.css.emphasisColor);
-		document.body.style.setProperty("--cbt-code-light-bg", theme.css.codeBlockLightBg);
-		document.body.style.setProperty("--cbt-circle-emoji", `"${theme.circleEmoji}"`);
+		activeDocument.body.style.setProperty("--cbt-text-color", theme.css.textColor);
+		activeDocument.body.style.setProperty("--cbt-heading-color", theme.css.headingColor);
+		activeDocument.body.style.setProperty("--cbt-border-color", theme.css.borderColor);
+		activeDocument.body.style.setProperty("--cbt-q-border-color", theme.css.qBorderColor);
+		activeDocument.body.style.setProperty("--cbt-link-color", theme.css.linkColor);
+		activeDocument.body.style.setProperty("--cbt-inline-code-bg", theme.css.inlineCodeBg);
+		activeDocument.body.style.setProperty("--cbt-inline-code-color", theme.css.inlineCodeColor);
+		activeDocument.body.style.setProperty("--cbt-emphasis-color", theme.css.emphasisColor);
+		activeDocument.body.style.setProperty("--cbt-code-light-bg", theme.css.codeBlockLightBg);
+		activeDocument.body.style.setProperty("--cbt-circle-emoji", `"${theme.circleEmoji}"`);
 	}
 
 	private _removeCSSVariables() {
@@ -358,7 +358,7 @@ export default class ChatCalloutOutlinePlugin extends Plugin {
 			"--cbt-inline-code-bg", "--cbt-inline-code-color", "--cbt-emphasis-color",
 			"--cbt-code-light-bg", "--cbt-circle-emoji", "--cbt-indicator-emoji",
 		];
-		for (const v of vars) document.body.style.removeProperty(v);
+		for (const v of vars) activeDocument.body.style.removeProperty(v);
 	}
 
 	// ── Outline injection ────────────────────────────────────────

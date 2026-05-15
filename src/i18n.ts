@@ -218,9 +218,14 @@ const translations: Record<Lang, Strings> = {
 	},
 };
 
+declare global {
+	interface Window {
+		moment?: { locale(): string };
+	}
+}
+
 function getLang(): Lang {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const locale: string = (window as any).moment?.locale() ?? "en";
+	const locale: string = window.moment?.locale() ?? "en";
 	if (locale.startsWith("zh-tw") || locale.startsWith("zh-TW")) return "zh-TW";
 	if (locale.startsWith("zh")) return "zh";
 	if (locale.startsWith("fr")) return "fr";
